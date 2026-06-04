@@ -5,37 +5,41 @@ One script to setup any project for any LLM tool with wiki + skills.
 ## Install
 
 ```bash
-git clone https://github.com/youruser/ai-setup.git /opt/ai
-bash /opt/ai/setup-project.sh --help
+git clone https://github.com/nurhambali/skill-forge.git /path/to/ai
+bash /path/to/ai/setup-project.sh --help
 ```
 
 ## Quick Start
 
+Use the same install commands whether you run them locally in a shell or through an AI tool that can execute terminal commands.
+
 ```bash
 # OpenCode (skills as separate files)
-bash /opt/ai/setup-project.sh --opencode /path/to/project "Project Name"
+bash /path/to/ai/setup-project.sh --opencode /path/to/project "Project Name"
 
 # Claude Code (skills embedded in CLAUDE.md)
-bash /opt/ai/setup-project.sh --claude /path/to/project "Project Name"
+bash /path/to/ai/setup-project.sh --claude /path/to/project "Project Name"
 
 # Kiro (AWS) (skills embedded in rules.md)
-bash /opt/ai/setup-project.sh --kiro /path/to/project "Project Name"
+bash /path/to/ai/setup-project.sh --kiro /path/to/project "Project Name"
 
 # Cursor (skills embedded in .cursorrules)
-bash /opt/ai/setup-project.sh --cursor /path/to/project "Project Name"
+bash /path/to/ai/setup-project.sh --cursor /path/to/project "Project Name"
 
 # Copilot (skills embedded in COPILOT.md)
-bash /opt/ai/setup-project.sh --copilot /path/to/project "Project Name"
+bash /path/to/ai/setup-project.sh --copilot /path/to/project "Project Name"
 
 # Windsurf (Codeium) (skills embedded in .windsurfrules)
-bash /opt/ai/setup-project.sh --windsurf /path/to/project "Project Name"
+bash /path/to/ai/setup-project.sh --windsurf /path/to/project "Project Name"
 
 # Amp (Sourcegraph) (skills embedded in .amprc)
-bash /opt/ai/setup-project.sh --amp /path/to/project "Project Name"
+bash /path/to/ai/setup-project.sh --amp /path/to/project "Project Name"
 
 # Auto-detect
-bash /opt/ai/setup-project.sh /path/to/project "Project Name"
+bash /path/to/ai/setup-project.sh /path/to/project "Project Name"
 ```
+
+> If your AI assistant supports running shell commands, it can use the same install command directly. You can also copy the URL for `superpowers@git+https://github.com/obra/superpowers.git` into other tools that accept Git-based plugin sources.
 
 ## Supported Tools
 
@@ -140,13 +144,13 @@ The wiki (`.wiki/`) is a persistent memory system for LLM agents:
 Skills are auto-downloaded on first run. To force refresh:
 
 ```bash
-bash /opt/ai/sync-skills.sh
+bash /path/to/ai/sync-skills.sh
 ```
 
 ## Files
 
 ```
-/opt/ai/
+/path/to/ai/
 ├── README.md
 ├── setup-project.sh    # Main script (auto-downloads skills)
 ├── sync-skills.sh      # Optional: force refresh skills cache
