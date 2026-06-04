@@ -1,6 +1,6 @@
 #!/bin/bash
 # Universal Project Setup — All LLM Tools
-# Usage: bash /opt/ai/setup-project.sh [--opencode|--claude|--copilot|--cursor|--kiro|--windsurf|--amp|--antigravity] /path/to/project [name]
+# Usage: bash /path/to/ai/setup-project.sh [--opencode|--claude|--copilot|--cursor|--kiro|--antigravity] /path/to/project [name]
 #
 # Contoh:
 #   bash /path/to/ai/setup-project.sh --opencode . "My App"
@@ -120,10 +120,6 @@ if [ -z "$TOOL" ]; then
         TOOL="cursor"
     elif [ -d "$HOME/.kiro" ] || command -v kiro &>/dev/null; then
         TOOL="kiro"
-    elif [ -d "$HOME/.windsurf" ] || command -v windsurf &>/dev/null; then
-        TOOL="windsurf"
-    elif command -v amp &>/dev/null; then
-        TOOL="amp"
     elif [ -d "$HOME/.antigravity" ] || command -v antigravity &>/dev/null; then
         TOOL="antigravity"
     else
@@ -504,12 +500,14 @@ EOF
 EOF
         ;;
     
-    windsurf)
-        echo "[WINDSURF] Setting up..."
-        mkdir -p "$PROJECT_DIR/.windsurf"
-        
-        cat > "$PROJECT_DIR/.windsurfrules" << 'EOF'
-# Windsurf Rules
+    antigravity)
+        echo "[ANTIGRAVITY] Setting up..."
+        mkdir -p "$PROJECT_DIR/.antigravity"
+
+        SKILLS_CONTENT=$(generate_skills_content)
+
+        cat > "$PROJECT_DIR/.antigravity/rules.md" << EOF
+# Antigravity Rules
 
 ## Project Context
 
@@ -531,6 +529,10 @@ Persistent memory at `.wiki/`.
 4. **Setelah fix bug** → tambahin ke `.wiki/issues.md`
 5. **Commit** → pastikan `.wiki/` juga di-commit
 
+## Skills
+
+$SKILLS_CONTENT
+
 ## Conventions
 
 <!-- Isi conventions -->
@@ -540,19 +542,6 @@ Persistent memory at `.wiki/`.
 <!-- Isi status terkini -->
 EOF
         ;;
-    
-    amp)
-        echo "[AMP] Setting up..."
-        mkdir -p "$PROJECT_DIR/.amp"
-        
-        cat > "$PROJECT_DIR/.amprc" << 'EOF'
-# Amp Configuration
-
-## Project Context
-
-Read `.wiki/index.md` for architecture and decisions.
-
-## Git Workflow
 
 - `main` = production, `dev` = staging
 - NEVER push langsung ke `main`
@@ -623,7 +612,7 @@ EOF
 
     *)
         echo "[ERROR] Unknown tool: $TOOL"
-        echo "Supported: --opencode, --claude, --copilot, --cursor, --kiro, --windsurf, --amp, --antigravity"
+        echo "Supported: --opencode, --claude, --copilot, --cursor, --kiro, --antigravity"
         exit 1
         ;;
 esac
@@ -716,8 +705,6 @@ case "$TOOL" in
     copilot) echo "    - COPILOT.md" ;;
     cursor) echo "    - .cursorrules" ;;
     kiro) echo "    - .kiro/rules.md" ;;
-    windsurf) echo "    - .windsurfrules" ;;
-    amp) echo "    - .amprc" ;;
     antigravity) echo "    - .antigravity/rules.md" ;;
 esac
 echo "    - .wiki/ (4 files)"

@@ -29,12 +29,6 @@ bash /path/to/ai/setup-project.sh --cursor /path/to/project "Project Name"
 # Copilot (skills embedded in COPILOT.md)
 bash /path/to/ai/setup-project.sh --copilot /path/to/project "Project Name"
 
-# Windsurf (Codeium) (skills embedded in .windsurfrules)
-bash /path/to/ai/setup-project.sh --windsurf /path/to/project "Project Name"
-
-# Amp (Sourcegraph) (skills embedded in .amprc)
-bash /path/to/ai/setup-project.sh --amp /path/to/project "Project Name"
-
 # Antigravity (AI tool, rules file)
 bash /path/to/ai/setup-project.sh --antigravity /path/to/project "Project Name"
 
@@ -53,8 +47,6 @@ bash /path/to/ai/setup-project.sh /path/to/project "Project Name"
 | GitHub Copilot | `--copilot` | `COPILOT.md` | ✅ embedded | ✅ via rules |
 | Cursor | `--cursor` | `.cursorrules` | ✅ embedded | ✅ via rules |
 | Kiro (AWS) | `--kiro` | `.kiro/rules.md` | ✅ embedded | ✅ via rules |
-| Windsurf | `--windsurf` | `.windsurfrules` | ✅ embedded | ✅ via rules |
-| Amp | `--amp` | `.amprc` | ✅ embedded | ✅ via rules |
 | Antigravity | `--antigravity` | `.antigravity/rules.md` | ✅ embedded | ✅ via rules |
 
 ## What It Creates
@@ -70,8 +62,6 @@ project/
 ├── COPILOT.md                   # Copilot (with embedded skills)
 ├── .cursorrules                 # Cursor (with embedded skills)
 ├── .kiro/rules.md               # Kiro (with embedded skills)
-├── .windsurfrules               # Windsurf (with embedded skills)
-├── .amprc                       # Amp (with embedded skills)
 ├── .antigravity/rules.md        # Antigravity (with embedded skills)
 └── .wiki/                       # Universal (all tools)
     ├── index.md
