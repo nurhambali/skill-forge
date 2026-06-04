@@ -1,15 +1,16 @@
 #!/bin/bash
 # Universal Project Setup — All LLM Tools
-# Usage: bash /opt/ai/setup-project.sh [--opencode|--claude|--copilot|--cursor|--kiro|--windsurf|--amp] /path/to/project [name]
+# Usage: bash /opt/ai/setup-project.sh [--opencode|--claude|--copilot|--cursor|--kiro|--windsurf|--amp|--antigravity] /path/to/project [name]
 #
 # Contoh:
-#   bash /opt/ai/setup-project.sh --opencode . "My App"
-#   bash /opt/ai/setup-project.sh --claude . "My App"
-#   bash /opt/ai/setup-project.sh --kiro . "My App"
+#   bash /path/to/ai/setup-project.sh --opencode . "My App"
+#   bash /path/to/ai/setup-project.sh --claude . "My App"
+#   bash /path/to/ai/setup-project.sh --kiro . "My App"
+#   bash /path/to/ai/setup-project.sh --antigravity . "My App"
 #
 # Install from GitHub:
-#   git clone https://github.com/youruser/ai-setup.git /opt/ai
-#   bash /opt/ai/setup-project.sh --opencode /path/to/project "Project Name"
+#   git clone https://github.com/youruser/ai-setup.git /path/to/ai
+#   bash /path/to/ai/setup-project.sh --opencode /path/to/project "Project Name"
 
 set -e
 
@@ -23,10 +24,10 @@ for arg in "$@"; do
         --copilot) TOOL="copilot" ;;
         --cursor) TOOL="cursor" ;;
         --kiro) TOOL="kiro" ;;
-        --windsurf) TOOL="windsurf" ;;
-        --amp) TOOL="amp" ;;
+
+        --antigravity) TOOL="antigravity" ;;
         --help|-h)
-            echo "Usage: bash /opt/ai/setup-project.sh [--tool] /path/to/project [name]"
+            echo "Usage: bash /path/to/ai/setup-project.sh [--tool] /path/to/project [name]"
             echo ""
             echo "Tools:"
             echo "  --opencode    OpenCode (full: skills + wiki)"
@@ -34,8 +35,8 @@ for arg in "$@"; do
             echo "  --copilot     GitHub Copilot CLI"
             echo "  --cursor      Cursor IDE"
             echo "  --kiro        Kiro (AWS)"
-            echo "  --windsurf    Windsurf (Codeium)"
-            echo "  --amp         Amp (Sourcegraph)"
+
+            echo "  --antigravity Antigravity AI"
             echo "  (none)        Auto-detect"
             exit 0
             ;;
@@ -123,6 +124,8 @@ if [ -z "$TOOL" ]; then
         TOOL="windsurf"
     elif command -v amp &>/dev/null; then
         TOOL="amp"
+    elif [ -d "$HOME/.antigravity" ] || command -v antigravity &>/dev/null; then
+        TOOL="antigravity"
     else
         TOOL="opencode"
     fi
@@ -575,9 +578,52 @@ Persistent memory at `.wiki/`.
 EOF
         ;;
     
+    antigravity)
+        echo "[ANTIGRAVITY] Setting up..."
+        mkdir -p "$PROJECT_DIR/.antigravity"
+
+        SKILLS_CONTENT=$(generate_skills_content)
+
+        cat > "$PROJECT_DIR/.antigravity/rules.md" << EOF
+# Antigravity Rules
+
+## Project Context
+
+Read `.wiki/index.md` for architecture and decisions.
+
+## Git Workflow
+
+- `main` = production, `dev` = staging
+- NEVER push langsung ke `main`
+
+## Wiki — WAJIB AUTO-UPDATE
+
+Persistent memory at `.wiki/`.
+
+**RULES (WAJIB DI IKUTI):**
+1. **Sesi baru** → baca `.wiki/index.md` dulu
+2. **Setelah code change** → update `.wiki/log.md`
+3. **Setelah optimasi/benchmark** → update `.wiki/architecture.md`
+4. **Setelah fix bug** → tambahin ke `.wiki/issues.md`
+5. **Commit** → pastikan `.wiki/` juga di-commit
+
+## Skills
+
+$SKILLS_CONTENT
+
+## Conventions
+
+<!-- Isi conventions -->
+
+## Current Status
+
+<!-- Isi status terkini -->
+EOF
+        ;;
+
     *)
         echo "[ERROR] Unknown tool: $TOOL"
-        echo "Supported: --opencode, --claude, --copilot, --cursor, --kiro, --windsurf, --amp"
+        echo "Supported: --opencode, --claude, --copilot, --cursor, --kiro, --windsurf, --amp, --antigravity"
         exit 1
         ;;
 esac
@@ -672,6 +718,7 @@ case "$TOOL" in
     kiro) echo "    - .kiro/rules.md" ;;
     windsurf) echo "    - .windsurfrules" ;;
     amp) echo "    - .amprc" ;;
+    antigravity) echo "    - .antigravity/rules.md" ;;
 esac
 echo "    - .wiki/ (4 files)"
 echo ""

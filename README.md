@@ -35,6 +35,9 @@ bash /path/to/ai/setup-project.sh --windsurf /path/to/project "Project Name"
 # Amp (Sourcegraph) (skills embedded in .amprc)
 bash /path/to/ai/setup-project.sh --amp /path/to/project "Project Name"
 
+# Antigravity (AI tool, rules file)
+bash /path/to/ai/setup-project.sh --antigravity /path/to/project "Project Name"
+
 # Auto-detect
 bash /path/to/ai/setup-project.sh /path/to/project "Project Name"
 ```
@@ -52,6 +55,7 @@ bash /path/to/ai/setup-project.sh /path/to/project "Project Name"
 | Kiro (AWS) | `--kiro` | `.kiro/rules.md` | ✅ embedded | ✅ via rules |
 | Windsurf | `--windsurf` | `.windsurfrules` | ✅ embedded | ✅ via rules |
 | Amp | `--amp` | `.amprc` | ✅ embedded | ✅ via rules |
+| Antigravity | `--antigravity` | `.antigravity/rules.md` | ✅ embedded | ✅ via rules |
 
 ## What It Creates
 
@@ -68,6 +72,7 @@ project/
 ├── .kiro/rules.md               # Kiro (with embedded skills)
 ├── .windsurfrules               # Windsurf (with embedded skills)
 ├── .amprc                       # Amp (with embedded skills)
+├── .antigravity/rules.md        # Antigravity (with embedded skills)
 └── .wiki/                       # Universal (all tools)
     ├── index.md
     ├── log.md
