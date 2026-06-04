@@ -109,10 +109,12 @@ Skills powered by [obra/superpowers](https://github.com/obra/superpowers) — th
 // ~/.config/opencode/opencode.json
 {
   "plugin": [
-    "superpowers@git+https://github.com/obra/superpowers.git#v5.1.0"
+    "superpowers@git+https://github.com/obra/superpowers.git"
   ]
 }
 ```
+
+> For new installs, omitting the `#tag` means the default branch is used, so the latest plugin source is fetched. To pin to a stable release, append a specific tag like `#v5.1.0`.
 
 ## How Wiki Works
 

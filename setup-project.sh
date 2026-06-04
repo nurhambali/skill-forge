@@ -293,7 +293,7 @@ import json
 with open('$GLOBAL_CONFIG', 'r') as f:
     config = json.load(f)
 plugins = config.get('plugin', [])
-plugins.append('superpowers@git+https://github.com/obra/superpowers.git#v5.1.0')
+plugins.append('superpowers@git+https://github.com/obra/superpowers.git')
 config['plugin'] = plugins
 with open('$GLOBAL_CONFIG', 'w') as f:
     json.dump(config, f, indent=2)
