@@ -1,0 +1,40 @@
+name: Sync Skills
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Setiap minggu (Sunday midnight UTC)
+  workflow_dispatch:       # Manual trigger dari GitHub UI
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Sync skills from upstream
+        run: bash sync-skills.sh
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit if changes
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          git add skills/
+          git commit -m "chore: sync skills from upstream $(date +'%Y-%m-%d')"
+          git push

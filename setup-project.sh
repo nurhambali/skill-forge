@@ -47,6 +47,66 @@ PROJECT_DIR="${POSITIONAL[0]:-.}"
 PROJECT_NAME="${POSITIONAL[1]:-$(basename "$(realpath "$PROJECT_DIR")")}"
 SKILLS_SOURCE="$(dirname "$(realpath "$0")")/skills"
 
+# Function to download skills from upstream
+download_skills() {
+    local tmpdir=$(mktemp -d)
+    echo "[DOWNLOAD] Fetching skills from upstream..."
+    
+    # Clone addyosmani/agent-skills (shallow)
+    git clone --depth 1 https://github.com/addyosmani/agent-skills.git "$tmpdir/agent-skills" 2>/dev/null
+    
+    # Clone obra/superpowers (for wiki skill)
+    git clone --depth 1 https://github.com/obra/superpowers.git "$tmpdir/superpowers" 2>/dev/null
+    
+    # Create skills directory
+    mkdir -p "$SKILLS_SOURCE"
+    rm -rf "$SKILLS_SOURCE"/*
+    
+    # Copy skills from addyosmani/agent-skills
+    if [ -d "$tmpdir/agent-skills/skills" ]; then
+        cp -r "$tmpdir/agent-skills/skills"/* "$SKILLS_SOURCE/" 2>/dev/null
+    fi
+    
+    # Copy wiki skill from obra/superpowers
+    if [ -d "$tmpdir/superpowers/skills/wiki" ]; then
+        cp -r "$tmpdir/superpowers/skills/wiki" "$SKILLS_SOURCE/wiki"
+    fi
+    
+    # Cleanup
+    rm -rf "$tmpdir"
+    
+    local count=$(ls -1d "$SKILLS_SOURCE"/*/ 2>/dev/null | wc -l)
+    echo "[OK] Downloaded $count skills"
+}
+
+# Check if skills exist, if not download them
+if [ ! -d "$SKILLS_SOURCE" ] || [ -z "$(ls -A "$SKILLS_SOURCE" 2>/dev/null)" ]; then
+    download_skills
+fi
+
+# Function to generate skills content for non-OpenCode tools
+generate_skills_content() {
+    local skills_content=""
+    for skill_dir in "$SKILLS_SOURCE"/*/; do
+        [ -d "$skill_dir" ] || continue
+        skill_name=$(basename "$skill_dir")
+        skill_file="$skill_dir/SKILL.md"
+        if [ -f "$skill_file" ]; then
+            skills_content+="### $skill_name"$'\n\n'
+            # Extract description from frontmatter or first meaningful lines
+            skills_content+=$(awk '
+                /^---$/ { fm++; next }
+                fm==1 && /^description:/ { gsub(/^description: */, ""); print; next }
+                fm==1 && /^name:/ { next }
+                fm>=2 && /^#/ { print; exit }
+                fm>=2 && /^[A-Z]/ && !/^---$/ && !/^#/ { print; exit }
+            ' "$skill_file")
+            skills_content+=$'\n\n'
+        fi
+    done
+    echo "$skills_content"
+}
+
 # Auto-detect if no flag
 if [ -z "$TOOL" ]; then
     if [ -d "$PROJECT_DIR/.opencode" ] || command -v opencode &>/dev/null; then
@@ -246,29 +306,35 @@ with open('$GLOBAL_CONFIG', 'w') as f:
         echo "[CLAUDE] Setting up..."
         mkdir -p "$PROJECT_DIR/.claude"
         
-        cat > "$PROJECT_DIR/CLAUDE.md" << 'EOF'
+        SKILLS_CONTENT=$(generate_skills_content)
+        
+        cat > "$PROJECT_DIR/CLAUDE.md" << EOF
 # CLAUDE.md — Project Config
 
 ## Quick Start
 
-1. Read `.wiki/index.md` — architecture, decisions
+1. Read \`.wiki/index.md\` — architecture, decisions
 2. Follow conventions below
 
 ## Git Workflow
 
-- `main` = production, `dev` = staging
-- NEVER push langsung ke `main`
+- \`main\` = production, \`dev\` = staging
+- NEVER push langsung ke \`main\`
 
 ## Wiki — WAJIB AUTO-UPDATE
 
-Persistent memory at `.wiki/`.
+Persistent memory at \`.wiki/\`.
 
 **RULES (WAJIB DI IKUTI):**
-1. **Sesi baru** → baca `.wiki/index.md` dulu
-2. **Setelah code change** → update `.wiki/log.md`
-3. **Setelah optimasi/benchmark** → update `.wiki/architecture.md`
-4. **Setelah fix bug** → tambahin ke `.wiki/issues.md`
-5. **Commit** → pastikan `.wiki/` juga di-commit
+1. **Sesi baru** → baca \`.wiki/index.md\` dulu
+2. **Setelah code change** → update \`.wiki/log.md\`
+3. **Setelah optimasi/benchmark** → update \`.wiki/architecture.md\`
+4. **Setelah fix bug** → tambahin ke \`.wiki/issues.md\`
+5. **Commit** → pastikan \`.wiki/\` juga di-commit
+
+## Skills
+
+$SKILLS_CONTENT
 
 ## Conventions
 
@@ -293,29 +359,35 @@ EOF
         echo "[COPILOT] Setting up..."
         mkdir -p "$PROJECT_DIR/.github"
         
-        cat > "$PROJECT_DIR/COPILOT.md" << 'EOF'
+        SKILLS_CONTENT=$(generate_skills_content)
+        
+        cat > "$PROJECT_DIR/COPILOT.md" << EOF
 # COPILOT.md — Project Config
 
 ## Quick Start
 
-1. Read `.wiki/index.md` — architecture, decisions
+1. Read \`.wiki/index.md\` — architecture, decisions
 2. Follow conventions below
 
 ## Git Workflow
 
-- `main` = production, `dev` = staging
-- NEVER push langsung ke `main`
+- \`main\` = production, \`dev\` = staging
+- NEVER push langsung ke \`main\`
 
 ## Wiki — WAJIB AUTO-UPDATE
 
-Persistent memory at `.wiki/`.
+Persistent memory at \`.wiki/\`.
 
 **RULES (WAJIB DI IKUTI):**
-1. **Sesi baru** → baca `.wiki/index.md` dulu
-2. **Setelah code change** → update `.wiki/log.md`
-3. **Setelah optimasi/benchmark** → update `.wiki/architecture.md`
-4. **Setelah fix bug** → tambahin ke `.wiki/issues.md`
-5. **Commit** → pastikan `.wiki/` juga di-commit
+1. **Sesi baru** → baca \`.wiki/index.md\` dulu
+2. **Setelah code change** → update \`.wiki/log.md\`
+3. **Setelah optimasi/benchmark** → update \`.wiki/architecture.md\`
+4. **Setelah fix bug** → tambahin ke \`.wiki/issues.md\`
+5. **Commit** → pastikan \`.wiki/\` juga di-commit
+
+## Skills
+
+$SKILLS_CONTENT
 
 ## Conventions
 
@@ -331,28 +403,34 @@ EOF
         echo "[CURSOR] Setting up..."
         mkdir -p "$PROJECT_DIR/.cursor"
         
-        cat > "$PROJECT_DIR/.cursorrules" << 'EOF'
+        SKILLS_CONTENT=$(generate_skills_content)
+        
+        cat > "$PROJECT_DIR/.cursorrules" << EOF
 # Cursor Rules
 
 ## Project Context
 
-Read `.wiki/index.md` for architecture and decisions.
+Read \`.wiki/index.md\` for architecture and decisions.
 
 ## Git Workflow
 
-- `main` = production, `dev` = staging
-- NEVER push langsung ke `main`
+- \`main\` = production, \`dev\` = staging
+- NEVER push langsung ke \`main\`
 
 ## Wiki — WAJIB AUTO-UPDATE
 
-Persistent memory at `.wiki/`.
+Persistent memory at \`.wiki/\`.
 
 **RULES (WAJIB DI IKUTI):**
-1. **Sesi baru** → baca `.wiki/index.md` dulu
-2. **Setelah code change** → update `.wiki/log.md`
-3. **Setelah optimasi/benchmark** → update `.wiki/architecture.md`
-4. **Setelah fix bug** → tambahin ke `.wiki/issues.md`
-5. **Commit** → pastikan `.wiki/` juga di-commit
+1. **Sesi baru** → baca \`.wiki/index.md\` dulu
+2. **Setelah code change** → update \`.wiki/log.md\`
+3. **Setelah optimasi/benchmark** → update \`.wiki/architecture.md\`
+4. **Setelah fix bug** → tambahin ke \`.wiki/issues.md\`
+5. **Commit** → pastikan \`.wiki/\` juga di-commit
+
+## Skills
+
+$SKILLS_CONTENT
 
 ## Conventions
 
@@ -375,28 +453,34 @@ EOF
         echo "[KIRO] Setting up..."
         mkdir -p "$PROJECT_DIR/.kiro"
         
-        cat > "$PROJECT_DIR/.kiro/rules.md" << 'EOF'
+        SKILLS_CONTENT=$(generate_skills_content)
+        
+        cat > "$PROJECT_DIR/.kiro/rules.md" << EOF
 # Kiro Rules
 
 ## Project Context
 
-Read `.wiki/index.md` for architecture and decisions.
+Read \`.wiki/index.md\` for architecture and decisions.
 
 ## Git Workflow
 
-- `main` = production, `dev` = staging
-- NEVER push langsung ke `main`
+- \`main\` = production, \`dev\` = staging
+- NEVER push langsung ke \`main\`
 
 ## Wiki — WAJIB AUTO-UPDATE
 
-Persistent memory at `.wiki/`.
+Persistent memory at \`.wiki/\`.
 
 **RULES (WAJIB DI IKUTI):**
-1. **Sesi baru** → baca `.wiki/index.md` dulu
-2. **Setelah code change** → update `.wiki/log.md`
-3. **Setelah optimasi/benchmark** → update `.wiki/architecture.md`
-4. **Setelah fix bug** → tambahin ke `.wiki/issues.md`
-5. **Commit** → pastikan `.wiki/` juga di-commit
+1. **Sesi baru** → baca \`.wiki/index.md\` dulu
+2. **Setelah code change** → update \`.wiki/log.md\`
+3. **Setelah optimasi/benchmark** → update \`.wiki/architecture.md\`
+4. **Setelah fix bug** → tambahin ke \`.wiki/issues.md\`
+5. **Commit** → pastikan \`.wiki/\` juga di-commit
+
+## Skills
+
+$SKILLS_CONTENT
 
 ## Conventions
 

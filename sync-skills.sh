@@ -1,30 +1,48 @@
 #!/bin/bash
-# Sync skills dari recon-data ke /opt/ai/skills
-# Jalankan ini kalau ada skill baru di recon-data
+# Force refresh skills cache dari upstream
+# Opsional: script otomatis download kalau skills kosong
 # Usage: bash /opt/ai/sync-skills.sh
 
 set -e
 
-SOURCE="/opt/recon-data/.opencode/skills"
-TARGET="/opt/ai/skills"
+SKILLS_DIR="$(dirname "$(realpath "$0")")/skills"
 
-echo "Syncing skills from $SOURCE to $TARGET..."
+echo "=========================================="
+echo "  Refreshing Skills Cache"
+echo "=========================================="
 
-if [ ! -d "$SOURCE" ]; then
-    echo "[ERROR] Source not found: $SOURCE"
-    exit 1
-fi
+# Remove existing skills
+rm -rf "$SKILLS_DIR"
 
-for skill_dir in "$SOURCE"/*/; do
-    skill_name=$(basename "$skill_dir")
-    if [ -d "$TARGET/$skill_name" ]; then
-        echo "[UPDATE] $skill_name"
-        rm -rf "$TARGET/$skill_name"
-    else
-        echo "[NEW] $skill_name"
-    fi
-    cp -r "$skill_dir" "$TARGET/$skill_name"
-done
+# Re-download
+TMPDIR=$(mktemp -d)
 
 echo ""
-echo "Done! $(ls -1d "$TARGET"/*/ | wc -l) skills synced"
+echo "[1/2] Cloning addyosmani/agent-skills..."
+git clone --depth 1 https://github.com/addyosmani/agent-skills.git "$TMPDIR/agent-skills" 2>/dev/null
+
+echo "[2/2] Cloning obra/superpowers..."
+git clone --depth 1 https://github.com/obra/superpowers.git "$TMPDIR/superpowers" 2>/dev/null
+
+echo ""
+echo "Installing skills..."
+
+mkdir -p "$SKILLS_DIR"
+
+# Copy skills from addyosmani/agent-skills
+if [ -d "$TMPDIR/agent-skills/skills" ]; then
+    cp -r "$TMPDIR/agent-skills/skills"/* "$SKILLS_DIR/" 2>/dev/null
+fi
+
+# Copy wiki skill from obra/superpowers
+if [ -d "$TMPDIR/superpowers/skills/wiki" ]; then
+    cp -r "$TMPDIR/superpowers/skills/wiki" "$SKILLS_DIR/wiki"
+fi
+
+# Cleanup
+rm -rf "$TMPDIR"
+
+echo ""
+echo "=========================================="
+echo "Done! $(ls -1d "$SKILLS_DIR"/*/ 2>/dev/null | wc -l) skills installed"
+echo "=========================================="

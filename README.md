@@ -12,25 +12,25 @@ bash /opt/ai/setup-project.sh --help
 ## Quick Start
 
 ```bash
-# OpenCode (full support: skills + wiki)
+# OpenCode (skills as separate files)
 bash /opt/ai/setup-project.sh --opencode /path/to/project "Project Name"
 
-# Claude Code
+# Claude Code (skills embedded in CLAUDE.md)
 bash /opt/ai/setup-project.sh --claude /path/to/project "Project Name"
 
-# Kiro (AWS)
+# Kiro (AWS) (skills embedded in rules.md)
 bash /opt/ai/setup-project.sh --kiro /path/to/project "Project Name"
 
-# Cursor
+# Cursor (skills embedded in .cursorrules)
 bash /opt/ai/setup-project.sh --cursor /path/to/project "Project Name"
 
-# Copilot
+# Copilot (skills embedded in COPILOT.md)
 bash /opt/ai/setup-project.sh --copilot /path/to/project "Project Name"
 
-# Windsurf (Codeium)
+# Windsurf (Codeium) (skills embedded in .windsurfrules)
 bash /opt/ai/setup-project.sh --windsurf /path/to/project "Project Name"
 
-# Amp (Sourcegraph)
+# Amp (Sourcegraph) (skills embedded in .amprc)
 bash /opt/ai/setup-project.sh --amp /path/to/project "Project Name"
 
 # Auto-detect
@@ -41,13 +41,13 @@ bash /opt/ai/setup-project.sh /path/to/project "Project Name"
 
 | Tool | Flag | Config File | Skills | Wiki |
 |------|------|-------------|--------|------|
-| OpenCode | `--opencode` | `.opencode/AGENTS.md` | ✅ 12 skills | ✅ auto-update |
-| Claude Code | `--claude` | `CLAUDE.md` | ❌ | ✅ via rules |
-| GitHub Copilot | `--copilot` | `COPILOT.md` | ❌ | ✅ via rules |
-| Cursor | `--cursor` | `.cursorrules` | ❌ | ✅ via rules |
-| Kiro (AWS) | `--kiro` | `.kiro/rules.md` | ❌ | ✅ via rules |
-| Windsurf | `--windsurf` | `.windsurfrules` | ❌ | ✅ via rules |
-| Amp | `--amp` | `.amprc` | ❌ | ✅ via rules |
+| OpenCode | `--opencode` | `.opencode/AGENTS.md` | ✅ auto-download | ✅ auto-update |
+| Claude Code | `--claude` | `CLAUDE.md` | ✅ embedded | ✅ via rules |
+| GitHub Copilot | `--copilot` | `COPILOT.md` | ✅ embedded | ✅ via rules |
+| Cursor | `--cursor` | `.cursorrules` | ✅ embedded | ✅ via rules |
+| Kiro (AWS) | `--kiro` | `.kiro/rules.md` | ✅ embedded | ✅ via rules |
+| Windsurf | `--windsurf` | `.windsurfrules` | ✅ embedded | ✅ via rules |
+| Amp | `--amp` | `.amprc` | ✅ embedded | ✅ via rules |
 
 ## What It Creates
 
@@ -57,12 +57,13 @@ project/
 ├── .opencode/                   # OpenCode only
 │   ├── AGENTS.md
 │   ├── opencode.json
-│   └── skills/ (12 skills)
-├── CLAUDE.md                    # Claude Code only
-├── .cursorrules                 # Cursor only
-├── .kiro/rules.md               # Kiro only
-├── .windsurfrules               # Windsurf only
-├── .amprc                       # Amp only
+│   └── skills/ (23 skills)      # Auto-downloaded
+├── CLAUDE.md                    # Claude Code (with embedded skills)
+├── COPILOT.md                   # Copilot (with embedded skills)
+├── .cursorrules                 # Cursor (with embedded skills)
+├── .kiro/rules.md               # Kiro (with embedded skills)
+├── .windsurfrules               # Windsurf (with embedded skills)
+├── .amprc                       # Amp (with embedded skills)
 └── .wiki/                       # Universal (all tools)
     ├── index.md
     ├── log.md
@@ -70,24 +71,35 @@ project/
     └── issues.md
 ```
 
-## OpenCode Skills (12 included)
+## Skills (23 included)
 
-Skills sourced from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) + custom wiki skill.
+Skills sourced from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) + [obra/superpowers](https://github.com/obra/superpowers). Auto-downloaded on first run, embedded in all tool configs.
 
 | Skill | Description | Source |
 |-------|-------------|--------|
-| [api-and-interface-design](https://github.com/addyosmani/agent-skills/tree/main/api-and-interface-design) | API design patterns | addyosmani/agent-skills |
-| [ci-cd-and-automation](https://github.com/addyosmani/agent-skills/tree/main/ci-cd-and-automation) | CI/CD pipeline setup | addyosmani/agent-skills |
-| [consistency-checker](https://github.com/addyosmani/agent-skills/tree/main/consistency-checker) | Code consistency | addyosmani/agent-skills |
-| [context-engineering](https://github.com/addyosmani/agent-skills/tree/main/context-engineering) | Agent context optimization | addyosmani/agent-skills |
-| [doubt-driven-development](https://github.com/addyosmani/agent-skills/tree/main/doubt-driven-development) | Verification before completion | addyosmani/agent-skills |
-| [frontend-ui-engineering](https://github.com/addyosmani/agent-skills/tree/main/frontend-ui-engineering) | Production UI development | addyosmani/agent-skills |
-| [git-workflow-and-versioning](https://github.com/addyosmani/agent-skills/tree/main/git-workflow-and-versioning) | Git practices | addyosmani/agent-skills |
-| [issue-handler](https://github.com/addyosmani/agent-skills/tree/main/issue-handler) | Issue workflow | addyosmani/agent-skills |
-| [security-and-hardening](https://github.com/addyosmani/agent-skills/tree/main/security-and-hardening) | Security review | addyosmani/agent-skills |
-| [source-driven-development](https://github.com/addyosmani/agent-skills/tree/main/source-driven-development) | Documentation-based coding | addyosmani/agent-skills |
-| [spec-driven-development](https://github.com/addyosmani/agent-skills/tree/main/spec-driven-development) | Spec-first development | addyosmani/agent-skills |
-| [wiki](https://github.com/obra/superpowers) | LLM-maintained knowledge base | obra/superpowers |
+| [api-and-interface-design](https://github.com/addyosmani/agent-skills/blob/main/skills/api-and-interface-design/SKILL.md) | API design patterns | addyosmani/agent-skills |
+| [ci-cd-and-automation](https://github.com/addyosmani/agent-skills/blob/main/skills/ci-cd-and-automation/SKILL.md) | CI/CD pipeline setup | addyosmani/agent-skills |
+| [code-review-and-quality](https://github.com/addyosmani/agent-skills/blob/main/skills/code-review-and-quality/SKILL.md) | Code review best practices | addyosmani/agent-skills |
+| [code-simplification](https://github.com/addyosmani/agent-skills/blob/main/skills/code-simplification/SKILL.md) | Code simplification | addyosmani/agent-skills |
+| [context-engineering](https://github.com/addyosmani/agent-skills/blob/main/skills/context-engineering/SKILL.md) | Agent context optimization | addyosmani/agent-skills |
+| [debugging-and-error-recovery](https://github.com/addyosmani/agent-skills/blob/main/skills/debugging-and-error-recovery/SKILL.md) | Debugging workflows | addyosmani/agent-skills |
+| [deprecation-and-migration](https://github.com/addyosmani/agent-skills/blob/main/skills/deprecation-and-migration/SKILL.md) | Deprecation patterns | addyosmani/agent-skills |
+| [documentation-and-adrs](https://github.com/addyosmani/agent-skills/blob/main/skills/documentation-and-adrs/SKILL.md) | Documentation & ADRs | addyosmani/agent-skills |
+| [doubt-driven-development](https://github.com/addyosmani/agent-skills/blob/main/skills/doubt-driven-development/SKILL.md) | Verification before completion | addyosmani/agent-skills |
+| [frontend-ui-engineering](https://github.com/addyosmani/agent-skills/blob/main/skills/frontend-ui-engineering/SKILL.md) | Production UI development | addyosmani/agent-skills |
+| [git-workflow-and-versioning](https://github.com/addyosmani/agent-skills/blob/main/skills/git-workflow-and-versioning/SKILL.md) | Git practices | addyosmani/agent-skills |
+| [idea-refine](https://github.com/addyosmani/agent-skills/blob/main/skills/idea-refine/SKILL.md) | Idea refinement | addyosmani/agent-skills |
+| [incremental-implementation](https://github.com/addyosmani/agent-skills/blob/main/skills/incremental-implementation/SKILL.md) | Incremental implementation | addyosmani/agent-skills |
+| [interview-me](https://github.com/addyosmani/agent-skills/blob/main/skills/interview-me/SKILL.md) | User interview | addyosmani/agent-skills |
+| [performance-optimization](https://github.com/addyosmani/agent-skills/blob/main/skills/performance-optimization/SKILL.md) | Performance optimization | addyosmani/agent-skills |
+| [planning-and-task-breakdown](https://github.com/addyosmani/agent-skills/blob/main/skills/planning-and-task-breakdown/SKILL.md) | Task planning | addyosmani/agent-skills |
+| [security-and-hardening](https://github.com/addyosmani/agent-skills/blob/main/skills/security-and-hardening/SKILL.md) | Security review | addyosmani/agent-skills |
+| [shipping-and-launch](https://github.com/addyosmani/agent-skills/blob/main/skills/shipping-and-launch/SKILL.md) | Shipping & launch | addyosmani/agent-skills |
+| [source-driven-development](https://github.com/addyosmani/agent-skills/blob/main/skills/source-driven-development/SKILL.md) | Documentation-based coding | addyosmani/agent-skills |
+| [spec-driven-development](https://github.com/addyosmani/agent-skills/blob/main/skills/spec-driven-development/SKILL.md) | Spec-first development | addyosmani/agent-skills |
+| [test-driven-development](https://github.com/addyosmani/agent-skills/blob/main/skills/test-driven-development/SKILL.md) | TDD workflows | addyosmani/agent-skills |
+| [using-agent-skills](https://github.com/addyosmani/agent-skills/blob/main/skills/using-agent-skills/SKILL.md) | Meta: how to use skills | addyosmani/agent-skills |
+| [wiki](https://github.com/obra/superpowers/blob/main/skills/wiki/SKILL.md) | LLM-maintained knowledge base | obra/superpowers |
 
 ### Superpowers Plugin
 
@@ -121,9 +133,9 @@ The wiki (`.wiki/`) is a persistent memory system for LLM agents:
 | `.wiki/architecture.md` | System design + benchmarks | Architecture changes |
 | `.wiki/issues.md` | Known issues + solutions | Bugs found/fixed |
 
-## Sync Skills
+## Refresh Skills Cache (Optional)
 
-When new skills are added upstream:
+Skills are auto-downloaded on first run. To force refresh:
 
 ```bash
 bash /opt/ai/sync-skills.sh
@@ -134,20 +146,31 @@ bash /opt/ai/sync-skills.sh
 ```
 /opt/ai/
 ├── README.md
-├── setup-project.sh    # Main script
-├── sync-skills.sh      # Sync skills from upstream
-└── skills/             # 12 OpenCode skills
+├── setup-project.sh    # Main script (auto-downloads skills)
+├── sync-skills.sh      # Optional: force refresh skills cache
+└── skills/             # Auto-populated on first run (23 skills)
     ├── api-and-interface-design/
     ├── ci-cd-and-automation/
-    ├── consistency-checker/
+    ├── code-review-and-quality/
+    ├── code-simplification/
     ├── context-engineering/
+    ├── debugging-and-error-recovery/
+    ├── deprecation-and-migration/
+    ├── documentation-and-adrs/
     ├── doubt-driven-development/
     ├── frontend-ui-engineering/
     ├── git-workflow-and-versioning/
-    ├── issue-handler/
+    ├── idea-refine/
+    ├── incremental-implementation/
+    ├── interview-me/
+    ├── performance-optimization/
+    ├── planning-and-task-breakdown/
     ├── security-and-hardening/
+    ├── shipping-and-launch/
     ├── source-driven-development/
     ├── spec-driven-development/
+    ├── test-driven-development/
+    ├── using-agent-skills/
     └── wiki/
 ```
 
