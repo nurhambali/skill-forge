@@ -12,7 +12,7 @@
 #   git clone https://github.com/youruser/ai-setup.git /path/to/ai
 #   bash /path/to/ai/setup-project.sh --opencode /path/to/project "Project Name"
 
-set -e
+set -euo pipefail
 
 # Parse --tool flag
 TOOL=""
@@ -50,14 +50,31 @@ SKILLS_SOURCE="$(dirname "$(realpath "$0")")/skills"
 
 # Function to download skills from upstream
 download_skills() {
-    local tmpdir=$(mktemp -d)
+    local tmpdir
+    tmpdir=$(mktemp -d) || { echo "[ERROR] Gagal buat temp directory"; return 1; }
     echo "[DOWNLOAD] Fetching skills from upstream..."
     
-    # Clone addyosmani/agent-skills (shallow)
-    git clone --depth 1 https://github.com/addyosmani/agent-skills.git "$tmpdir/agent-skills" 2>/dev/null
+    local clone_ok=0
     
-    # Clone obra/superpowers (for wiki skill)
-    git clone --depth 1 https://github.com/obra/superpowers.git "$tmpdir/superpowers" 2>/dev/null
+    echo "[1/2] Cloning addyosmani/agent-skills..."
+    if git clone --depth 1 https://github.com/addyosmani/agent-skills.git "$tmpdir/agent-skills" 2>/dev/null; then
+        clone_ok=1
+    else
+        echo "[WARN] Gagal clone addyosmani/agent-skills. Cek koneksi internet."
+    fi
+    
+    echo "[2/2] Cloning obra/superpowers..."
+    if git clone --depth 1 https://github.com/obra/superpowers.git "$tmpdir/superpowers" 2>/dev/null; then
+        clone_ok=1
+    else
+        echo "[WARN] Gagal clone obra/superpowers. Cek koneksi internet."
+    fi
+    
+    if [ "$clone_ok" -eq 0 ]; then
+        echo "[ERROR] Tidak ada skills yang berhasil di-download. Periksa koneksi internet."
+        rm -rf "$tmpdir"
+        return 1
+    fi
     
     # Create skills directory
     mkdir -p "$SKILLS_SOURCE"
@@ -65,7 +82,7 @@ download_skills() {
     
     # Copy skills from addyosmani/agent-skills
     if [ -d "$tmpdir/agent-skills/skills" ]; then
-        cp -r "$tmpdir/agent-skills/skills"/* "$SKILLS_SOURCE/" 2>/dev/null
+        cp -r "$tmpdir/agent-skills/skills"/* "$SKILLS_SOURCE/"
     fi
     
     # Copy wiki skill from obra/superpowers
@@ -76,37 +93,15 @@ download_skills() {
     # Cleanup
     rm -rf "$tmpdir"
     
-    local count=$(ls -1d "$SKILLS_SOURCE"/*/ 2>/dev/null | wc -l)
-    echo "[OK] Downloaded $count skills"
+    local skill_count
+    skill_count=$(ls -1d "$SKILLS_SOURCE"/*/ 2>/dev/null | wc -l)
+    echo "[OK] Downloaded $skill_count skills"
 }
 
 # Check if skills exist, if not download them
 if [ ! -d "$SKILLS_SOURCE" ] || [ -z "$(ls -A "$SKILLS_SOURCE" 2>/dev/null)" ]; then
     download_skills
 fi
-
-# Function to generate skills content for non-OpenCode tools
-generate_skills_content() {
-    local skills_content=""
-    for skill_dir in "$SKILLS_SOURCE"/*/; do
-        [ -d "$skill_dir" ] || continue
-        skill_name=$(basename "$skill_dir")
-        skill_file="$skill_dir/SKILL.md"
-        if [ -f "$skill_file" ]; then
-            skills_content+="### $skill_name"$'\n\n'
-            # Extract description from frontmatter or first meaningful lines
-            skills_content+=$(awk '
-                /^---$/ { fm++; next }
-                fm==1 && /^description:/ { gsub(/^description: */, ""); print; next }
-                fm==1 && /^name:/ { next }
-                fm>=2 && /^#/ { print; exit }
-                fm>=2 && /^[A-Z]/ && !/^---$/ && !/^#/ { print; exit }
-            ' "$skill_file")
-            skills_content+=$'\n\n'
-        fi
-    done
-    echo "$skills_content"
-}
 
 # Auto-detect if no flag
 if [ -z "$TOOL" ]; then
@@ -190,20 +185,128 @@ Project wiki at `.wiki/` — persistent memory antar session.
 EOF
 
 # =============================================
-# 2. Tool-specific setup
+# 2. Universal skills copy (all tools)
+# =============================================
+mkdir -p "$PROJECT_DIR/.opencode/skills"
+SKILL_COUNT=0
+if [ -d "$SKILLS_SOURCE" ]; then
+    for skill_dir in "$SKILLS_SOURCE"/*/; do
+        skill_name=$(basename "$skill_dir")
+        cp -r "$skill_dir" "$PROJECT_DIR/.opencode/skills/$skill_name"
+        SKILL_COUNT=$((SKILL_COUNT + 1))
+        echo "[OK] Skill: $skill_name"
+    done
+fi
+
+# Generate built-in output-mode skill (cave)
+mkdir -p "$PROJECT_DIR/.opencode/skills/output-mode"
+cat > "$PROJECT_DIR/.opencode/skills/output-mode/SKILL.md" << 'EOF'
+---
+name: output-mode
+description: Atur verbosity AI. Panggil dengan "/cave <level>". Hemat token tanpa turunin kualitas.
+---
+
+# Output Mode
+
+Gunakan skill ini ketika user minta ngubah cara AI ngomong — lebih hemat token atau lebih detail.
+
+## Level
+
+| Perintah | Efek | Hemat Token |
+|----------|------|:-----------:|
+| `cave normal` | Reasoning Framework 5 langkah full (default) | 0% |
+| `cave ringkas` | 5 langkah, 1 kalimat per langkah | ~40% |
+| `cave ultra` | Langsung masalah → solusi, tanpa analisis/konteks | ~65% |
+| `cave caveman` | Fragment aja. No kalimat panjang. Brain still big. | ~75% |
+
+## Cara Pakai
+
+User: "cave ringkas" atau "/cave ultra"
+Mode berlaku sampai sesi berakhir atau diubah lagi.
+
+## Catatan
+
+- Mode cuma ngaruh ke cara nulis — kualitas kode tetap sama
+- Kalau ragu, balik ke "cave normal"
+EOF
+SKILL_COUNT=$((SKILL_COUNT + 1))
+echo "[OK] Skill: output-mode (cave)"
+
+# =============================================
+# 3. Universal SKILL_LOADER.md (all tools)
+# =============================================
+cat > "$PROJECT_DIR/SKILL_LOADER.md" << 'EOF'
+# SKILL_LOADER.md — Universal Skill Loader
+
+Semua AI tools (OpenCode, Claude, Copilot, Cursor, Kiro, Antigravity)
+berbagi sumber skill yang sama di `.opencode/skills/`.
+
+## ⚠️ WAJIB: Reasoning Framework
+
+Sebelum menjawab atau mengimplementasi apapun, tulis response dengan format berikut.
+JANGAN PERNAH SKIP LANGKAH INI — ini yang membedakan hasil kerja terstruktur dan asal-asalan.
+
+### 1. ANALISIS
+Apa yang diminta user? Breakdown masalahnya dalam 1-2 kalimat.
+Contoh: "User minta fitur search dengan filter kategori. Ini berarti butuh endpoint API + UI komponen + database query."
+
+### 2. KONTEKS
+Framework/arsitektur/constraint yang relevan.
+Baca `.wiki/index.md` dan file project yang terkait.
+
+### 3. RENCANA
+Langkah-langkah solusi sebelum menulis kode. Minimal 3 langkah konkret.
+Contoh: "1. Buat migration table products 2. Buat API route GET /products 3. Buat komponen SearchBar 4. Integrasi dengan API"
+
+### 4. EKSEKUSI
+Implementasi sesuai rencana.
+
+### 5. VERIFIKASI
+Cek ulang apakah solusi sudah sesuai requirement.
+**Kalau ragu, tulis "Saya ragu karena ..." dan jangan lanjut sebelum jelas.**
+
+---
+
+## Cara Load Skill
+
+1. Pahami konteks/user request
+2. Cari skill yang relevan dari tabel di bawah
+3. Baca file `.opencode/skills/<nama>/SKILL.md`
+4. Ikuti instruksi di skill tersebut
+
+## Skill Index
+
+| Kondisi | Skill | File |
+|---------|-------|------|
+| Sesi baru / greeting | wiki | `.opencode/skills/wiki/SKILL.md` |
+| Edit frontend | frontend-ui-engineering | `.opencode/skills/frontend-ui-engineering/SKILL.md` |
+| Tambah endpoint / API | api-and-interface-design | `.opencode/skills/api-and-interface-design/SKILL.md` |
+| Auth / security | security-and-hardening | `.opencode/skills/security-and-hardening/SKILL.md` |
+| CI/CD / Docker | ci-cd-and-automation | `.opencode/skills/ci-cd-and-automation/SKILL.md` |
+| Fitur baru | spec-driven-development | `.opencode/skills/spec-driven-development/SKILL.md` |
+| Implementasi kode | incremental-implementation | `.opencode/skills/incremental-implementation/SKILL.md` |
+| Critical / unfamiliar code | doubt-driven-development | `.opencode/skills/doubt-driven-development/SKILL.md` |
+| Code review | code-review-and-quality | `.opencode/skills/code-review-and-quality/SKILL.md` |
+| Debugging | debugging-and-error-recovery | `.opencode/skills/debugging-and-error-recovery/SKILL.md` |
+| Performance | performance-optimization | `.opencode/skills/performance-optimization/SKILL.md` |
+| Testing | test-driven-development | `.opencode/skills/test-driven-development/SKILL.md` |
+| Planning | planning-and-task-breakdown | `.opencode/skills/planning-and-task-breakdown/SKILL.md` |
+| Commit / branch | git-workflow-and-versioning | `.opencode/skills/git-workflow-and-versioning/SKILL.md` |
+| Dokumentasi | documentation-and-adrs | `.opencode/skills/documentation-and-adrs/SKILL.md` |
+| Atur hemat token | output-mode | `.opencode/skills/output-mode/SKILL.md` |
+
+## Aturan
+
+- Load skill HANYA jika relevan — jangan load semua
+- Update `.wiki/log.md` setelah ada perubahan
+EOF
+
+# =============================================
+# 4. Tool-specific setup
 # =============================================
 case "$TOOL" in
     opencode)
         echo "[OPENCODE] Setting up..."
-        mkdir -p "$PROJECT_DIR/.opencode/skills"
-        
-        if [ -d "$SKILLS_SOURCE" ]; then
-            for skill_dir in "$SKILLS_SOURCE"/*/; do
-                skill_name=$(basename "$skill_dir")
-                cp -r "$skill_dir" "$PROJECT_DIR/.opencode/skills/$skill_name"
-                echo "[OK] Skill: $skill_name"
-            done
-        fi
         
         cat > "$PROJECT_DIR/.opencode/AGENTS.md" << 'EOF'
 <CRITICAL_DIRECTIVE>
@@ -304,46 +407,21 @@ with open('$GLOBAL_CONFIG', 'w') as f:
     claude)
         echo "[CLAUDE] Setting up..."
         mkdir -p "$PROJECT_DIR/.claude"
-        
-        SKILLS_CONTENT=$(generate_skills_content)
-        
-        cat > "$PROJECT_DIR/CLAUDE.md" << EOF
+        cat > "$PROJECT_DIR/CLAUDE.md" << 'EOF'
 # CLAUDE.md — Project Config
 
 ## Quick Start
-
-1. Read \`.wiki/index.md\` — architecture, decisions
-2. Follow conventions below
+1. Baca `SKILL_LOADER.md` — cara load skill yang relevan
+2. Baca `.wiki/index.md` — arsitektur dan keputusan
+3. Update `.wiki/` setelah setiap perubahan
 
 ## Git Workflow
-
-- \`main\` = production, \`dev\` = staging
-- NEVER push langsung ke \`main\`
-
-## Wiki — WAJIB AUTO-UPDATE
-
-Persistent memory at \`.wiki/\`.
-
-**RULES (WAJIB DI IKUTI):**
-1. **Sesi baru** → baca \`.wiki/index.md\` dulu
-2. **Setelah code change** → update \`.wiki/log.md\`
-3. **Setelah optimasi/benchmark** → update \`.wiki/architecture.md\`
-4. **Setelah fix bug** → tambahin ke \`.wiki/issues.md\`
-5. **Commit** → pastikan \`.wiki/\` juga di-commit
-
-## Skills
-
-$SKILLS_CONTENT
+- `main` = production, `dev` = staging
+- Jangan push langsung ke `main`
 
 ## Conventions
-
-<!-- Isi conventions -->
-
-## Current Status
-
-<!-- Isi status terkini -->
+<!-- Isi conventions project disini -->
 EOF
-        
         cat > "$PROJECT_DIR/.claude/settings.json" << 'EOF'
 {
   "permissions": {
@@ -357,89 +435,25 @@ EOF
     copilot)
         echo "[COPILOT] Setting up..."
         mkdir -p "$PROJECT_DIR/.github"
-        
-        SKILLS_CONTENT=$(generate_skills_content)
-        
-        cat > "$PROJECT_DIR/COPILOT.md" << EOF
+        cat > "$PROJECT_DIR/COPILOT.md" << 'EOF'
 # COPILOT.md — Project Config
 
-## Quick Start
-
-1. Read \`.wiki/index.md\` — architecture, decisions
-2. Follow conventions below
-
-## Git Workflow
-
-- \`main\` = production, \`dev\` = staging
-- NEVER push langsung ke \`main\`
-
-## Wiki — WAJIB AUTO-UPDATE
-
-Persistent memory at \`.wiki/\`.
-
-**RULES (WAJIB DI IKUTI):**
-1. **Sesi baru** → baca \`.wiki/index.md\` dulu
-2. **Setelah code change** → update \`.wiki/log.md\`
-3. **Setelah optimasi/benchmark** → update \`.wiki/architecture.md\`
-4. **Setelah fix bug** → tambahin ke \`.wiki/issues.md\`
-5. **Commit** → pastikan \`.wiki/\` juga di-commit
-
-## Skills
-
-$SKILLS_CONTENT
-
-## Conventions
-
-<!-- Isi conventions -->
-
-## Current Status
-
-<!-- Isi status terkini -->
+Baca `SKILL_LOADER.md` untuk cara load skill.
+Baca `.wiki/index.md` untuk arsitektur.
 EOF
         ;;
     
     cursor)
         echo "[CURSOR] Setting up..."
         mkdir -p "$PROJECT_DIR/.cursor"
-        
-        SKILLS_CONTENT=$(generate_skills_content)
-        
-        cat > "$PROJECT_DIR/.cursorrules" << EOF
+        cat > "$PROJECT_DIR/.cursorrules" << 'EOF'
 # Cursor Rules
 
 ## Project Context
 
-Read \`.wiki/index.md\` for architecture and decisions.
-
-## Git Workflow
-
-- \`main\` = production, \`dev\` = staging
-- NEVER push langsung ke \`main\`
-
-## Wiki — WAJIB AUTO-UPDATE
-
-Persistent memory at \`.wiki/\`.
-
-**RULES (WAJIB DI IKUTI):**
-1. **Sesi baru** → baca \`.wiki/index.md\` dulu
-2. **Setelah code change** → update \`.wiki/log.md\`
-3. **Setelah optimasi/benchmark** → update \`.wiki/architecture.md\`
-4. **Setelah fix bug** → tambahin ke \`.wiki/issues.md\`
-5. **Commit** → pastikan \`.wiki/\` juga di-commit
-
-## Skills
-
-$SKILLS_CONTENT
-
-## Conventions
-
-<!-- Isi conventions -->
-
-## Current Status
-
-<!-- Isi status terkini -->
+Baca `SKILL_LOADER.md` untuk cara load skill.
+Baca `.wiki/index.md` untuk arsitektur.
 EOF
-        
         cat > "$PROJECT_DIR/.cursor/settings.json" << 'EOF'
 {
   "ai.enableCodebaseIndexing": true,
@@ -451,45 +465,14 @@ EOF
     kiro)
         echo "[KIRO] Setting up..."
         mkdir -p "$PROJECT_DIR/.kiro"
-        
-        SKILLS_CONTENT=$(generate_skills_content)
-        
-        cat > "$PROJECT_DIR/.kiro/rules.md" << EOF
+        cat > "$PROJECT_DIR/.kiro/rules.md" << 'EOF'
 # Kiro Rules
 
 ## Project Context
 
-Read \`.wiki/index.md\` for architecture and decisions.
-
-## Git Workflow
-
-- \`main\` = production, \`dev\` = staging
-- NEVER push langsung ke \`main\`
-
-## Wiki — WAJIB AUTO-UPDATE
-
-Persistent memory at \`.wiki/\`.
-
-**RULES (WAJIB DI IKUTI):**
-1. **Sesi baru** → baca \`.wiki/index.md\` dulu
-2. **Setelah code change** → update \`.wiki/log.md\`
-3. **Setelah optimasi/benchmark** → update \`.wiki/architecture.md\`
-4. **Setelah fix bug** → tambahin ke \`.wiki/issues.md\`
-5. **Commit** → pastikan \`.wiki/\` juga di-commit
-
-## Skills
-
-$SKILLS_CONTENT
-
-## Conventions
-
-<!-- Isi conventions -->
-
-## Current Status
-
-<!-- Isi status terkini -->
+Baca `SKILL_LOADER.md` untuk cara load skill.
+Baca `.wiki/index.md` untuk arsitektur.
 EOF
-        
         cat > "$PROJECT_DIR/.kiro/settings.json" << 'EOF'
 {
   "ai": {
@@ -503,110 +486,11 @@ EOF
     antigravity)
         echo "[ANTIGRAVITY] Setting up..."
         mkdir -p "$PROJECT_DIR/.antigravity"
-
-        SKILLS_CONTENT=$(generate_skills_content)
-
-        cat > "$PROJECT_DIR/.antigravity/rules.md" << EOF
+        cat > "$PROJECT_DIR/.antigravity/rules.md" << 'EOF'
 # Antigravity Rules
 
-## Project Context
-
-Read `.wiki/index.md` for architecture and decisions.
-
-## Git Workflow
-
-- `main` = production, `dev` = staging
-- NEVER push langsung ke `main`
-
-## Wiki — WAJIB AUTO-UPDATE
-
-Persistent memory at `.wiki/`.
-
-**RULES (WAJIB DI IKUTI):**
-1. **Sesi baru** → baca `.wiki/index.md` dulu
-2. **Setelah code change** → update `.wiki/log.md`
-3. **Setelah optimasi/benchmark** → update `.wiki/architecture.md`
-4. **Setelah fix bug** → tambahin ke `.wiki/issues.md`
-5. **Commit** → pastikan `.wiki/` juga di-commit
-
-## Skills
-
-$SKILLS_CONTENT
-
-## Conventions
-
-<!-- Isi conventions -->
-
-## Current Status
-
-<!-- Isi status terkini -->
-EOF
-        ;;
-
-- `main` = production, `dev` = staging
-- NEVER push langsung ke `main`
-
-## Wiki — WAJIB AUTO-UPDATE
-
-Persistent memory at `.wiki/`.
-
-**RULES (WAJIB DI IKUTI):**
-1. **Sesi baru** → baca `.wiki/index.md` dulu
-2. **Setelah code change** → update `.wiki/log.md`
-3. **Setelah optimasi/benchmark** → update `.wiki/architecture.md`
-4. **Setelah fix bug** → tambahin ke `.wiki/issues.md`
-5. **Commit** → pastikan `.wiki/` juga di-commit
-
-## Conventions
-
-<!-- Isi conventions -->
-
-## Current Status
-
-<!-- Isi status terkini -->
-EOF
-        ;;
-    
-    antigravity)
-        echo "[ANTIGRAVITY] Setting up..."
-        mkdir -p "$PROJECT_DIR/.antigravity"
-
-        SKILLS_CONTENT=$(generate_skills_content)
-
-        cat > "$PROJECT_DIR/.antigravity/rules.md" << EOF
-# Antigravity Rules
-
-## Project Context
-
-Read `.wiki/index.md` for architecture and decisions.
-
-## Git Workflow
-
-- `main` = production, `dev` = staging
-- NEVER push langsung ke `main`
-
-## Wiki — WAJIB AUTO-UPDATE
-
-Persistent memory at `.wiki/`.
-
-**RULES (WAJIB DI IKUTI):**
-1. **Sesi baru** → baca `.wiki/index.md` dulu
-2. **Setelah code change** → update `.wiki/log.md`
-3. **Setelah optimasi/benchmark** → update `.wiki/architecture.md`
-4. **Setelah fix bug** → tambahin ke `.wiki/issues.md`
-5. **Commit** → pastikan `.wiki/` juga di-commit
-
-## Skills
-
-$SKILLS_CONTENT
-
-## Conventions
-
-<!-- Isi conventions -->
-
-## Current Status
-
-<!-- Isi status terkini -->
+Baca `SKILL_LOADER.md` untuk cara load skill.
+Baca `.wiki/index.md` untuk arsitektur.
 EOF
         ;;
 
@@ -618,7 +502,7 @@ EOF
 esac
 
 # =============================================
-# 3. Wiki files (UNIVERSAL)
+# 5. Wiki files (UNIVERSAL)
 # =============================================
 TODAY=$(date +%Y-%m-%d)
 
@@ -695,11 +579,12 @@ echo "  Tool: $TOOL"
 echo ""
 echo "  Files created:"
 echo "    - AGENTS.md (universal config)"
+echo "    - SKILL_LOADER.md (universal skill loader)"
+echo "    - .opencode/skills/ (${SKILL_COUNT:-0} skills)"
 case "$TOOL" in
     opencode)
         echo "    - .opencode/AGENTS.md"
         echo "    - .opencode/opencode.json"
-        echo "    - .opencode/skills/ (12 skills)"
         ;;
     claude) echo "    - CLAUDE.md" ;;
     copilot) echo "    - COPILOT.md" ;;

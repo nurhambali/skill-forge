@@ -1,9 +1,8 @@
 #!/bin/bash
 # Force refresh skills cache dari upstream
-# Opsional: script otomatis download kalau skills kosong
-# Usage: bash /opt/ai/sync-skills.sh
+# Usage: bash /path/to/ai/sync-skills.sh
 
-set -e
+set -euo pipefail
 
 SKILLS_DIR="$(dirname "$(realpath "$0")")/skills"
 
@@ -16,13 +15,20 @@ rm -rf "$SKILLS_DIR"
 
 # Re-download
 TMPDIR=$(mktemp -d)
+trap 'rm -rf "$TMPDIR"' EXIT
 
 echo ""
 echo "[1/2] Cloning addyosmani/agent-skills..."
-git clone --depth 1 https://github.com/addyosmani/agent-skills.git "$TMPDIR/agent-skills" 2>/dev/null
+if ! git clone --depth 1 https://github.com/addyosmani/agent-skills.git "$TMPDIR/agent-skills" 2>/dev/null; then
+    echo "[ERROR] Gagal clone addyosmani/agent-skills. Cek koneksi internet."
+    exit 1
+fi
 
 echo "[2/2] Cloning obra/superpowers..."
-git clone --depth 1 https://github.com/obra/superpowers.git "$TMPDIR/superpowers" 2>/dev/null
+if ! git clone --depth 1 https://github.com/obra/superpowers.git "$TMPDIR/superpowers" 2>/dev/null; then
+    echo "[ERROR] Gagal clone obra/superpowers. Cek koneksi internet."
+    exit 1
+fi
 
 echo ""
 echo "Installing skills..."
@@ -31,7 +37,7 @@ mkdir -p "$SKILLS_DIR"
 
 # Copy skills from addyosmani/agent-skills
 if [ -d "$TMPDIR/agent-skills/skills" ]; then
-    cp -r "$TMPDIR/agent-skills/skills"/* "$SKILLS_DIR/" 2>/dev/null
+    cp -r "$TMPDIR/agent-skills/skills"/* "$SKILLS_DIR/"
 fi
 
 # Copy wiki skill from obra/superpowers
@@ -39,10 +45,8 @@ if [ -d "$TMPDIR/superpowers/skills/wiki" ]; then
     cp -r "$TMPDIR/superpowers/skills/wiki" "$SKILLS_DIR/wiki"
 fi
 
-# Cleanup
-rm -rf "$TMPDIR"
-
 echo ""
 echo "=========================================="
-echo "Done! $(ls -1d "$SKILLS_DIR"/*/ 2>/dev/null | wc -l) skills installed"
+SKILL_COUNT=$(ls -1d "$SKILLS_DIR"/*/ 2>/dev/null | wc -l)
+echo "Done! $SKILL_COUNT skills installed"
 echo "=========================================="
