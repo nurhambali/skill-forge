@@ -78,7 +78,7 @@ download_skills() {
     
     # Create skills directory
     mkdir -p "$SKILLS_SOURCE"
-    rm -rf "$SKILLS_SOURCE"/*
+    rm -rf "${SKILLS_SOURCE:?}"/*
     
     # Copy skills from addyosmani/agent-skills
     if [ -d "$tmpdir/agent-skills/skills" ]; then
