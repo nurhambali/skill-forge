@@ -1,131 +1,137 @@
-# AI Setup — Universal LLM Project Bootstrap
+# Skill Forge — Universal LLM Project Bootstrap
 
-One script to setup any project for any LLM tool with wiki + skills.
+One script + one `forge` command to setup any project for any LLM tool with skills, reasoning framework, and wiki.
 
 ## Install
 
 ```bash
-git clone https://github.com/nurhambali/skill-forge.git /path/to/ai
-bash /path/to/ai/setup-project.sh --help
+git clone https://github.com/nurhambali/skill-forge.git ~/skill-forge
+cd ~/skill-forge && chmod +x setup-project.sh
+```
+
+### Global CLI (recommended)
+
+```bash
+# ~/.local/bin udah ada di PATH secara default di macOS/Linux
+mkdir -p ~/.local/bin
+ln -s ~/skill-forge/setup-project.sh ~/.local/bin/forge
+```
+
+Tinggal:
+
+```bash
+forge --opencode . "Project Name"
 ```
 
 ## Quick Start
 
-Use the same install commands whether you run them locally in a shell or through an AI tool that can execute terminal commands.
-
 ```bash
-# OpenCode (skills as separate files)
-bash /path/to/ai/setup-project.sh --opencode /path/to/project "Project Name"
-
-# Claude Code (skills embedded in CLAUDE.md)
-bash /path/to/ai/setup-project.sh --claude /path/to/project "Project Name"
-
-# Kiro (AWS) (skills embedded in rules.md)
-bash /path/to/ai/setup-project.sh --kiro /path/to/project "Project Name"
-
-# Cursor (skills embedded in .cursorrules)
-bash /path/to/ai/setup-project.sh --cursor /path/to/project "Project Name"
-
-# Copilot (skills embedded in COPILOT.md)
-bash /path/to/ai/setup-project.sh --copilot /path/to/project "Project Name"
-
-# Antigravity (AI tool, rules file)
-bash /path/to/ai/setup-project.sh --antigravity /path/to/project "Project Name"
-
-# Auto-detect
-bash /path/to/ai/setup-project.sh /path/to/project "Project Name"
+forge --opencode .                    # OpenCode (skills sebagai file terpisah)
+forge --claude .                      # Claude Code
+forge --kiro .                        # Kiro (AWS)
+forge --cursor .                      # Cursor
+forge --copilot .                     # GitHub Copilot
+forge --antigravity .                 # Antigravity
+forge .                              # Auto-detect tool
+forge --help                         # Bantuan
 ```
-
-> If your AI assistant supports running shell commands, it can use the same install command directly. You can also copy the URL for `superpowers@git+https://github.com/obra/superpowers.git` into other tools that accept Git-based plugin sources.
 
 ## Supported Tools
 
-| Tool | Flag | Config File | Skills | Wiki |
-|------|------|-------------|--------|------|
-| OpenCode | `--opencode` | `.opencode/AGENTS.md` | ✅ auto-download | ✅ auto-update |
-| Claude Code | `--claude` | `CLAUDE.md` | ✅ embedded | ✅ via rules |
-| GitHub Copilot | `--copilot` | `COPILOT.md` | ✅ embedded | ✅ via rules |
-| Cursor | `--cursor` | `.cursorrules` | ✅ embedded | ✅ via rules |
-| Kiro (AWS) | `--kiro` | `.kiro/rules.md` | ✅ embedded | ✅ via rules |
-| Antigravity | `--antigravity` | `.antigravity/rules.md` | ✅ embedded | ✅ via rules |
+Semua tool pake sumber skill yang **sama** — `.opencode/skills/`.
 
-## What It Creates
+| Tool | Flag | Config File | Skills |
+|------|------|-------------|--------|
+| OpenCode | `--opencode` | `.opencode/AGENTS.md` | ✅ file terpisah + superpowers plugin |
+| Claude Code | `--claude` | `CLAUDE.md` | ✅ refer ke `.opencode/skills/` |
+| GitHub Copilot | `--copilot` | `COPILOT.md` | ✅ refer ke `.opencode/skills/` |
+| Cursor | `--cursor` | `.cursorrules` | ✅ refer ke `.opencode/skills/` |
+| Kiro (AWS) | `--kiro` | `.kiro/rules.md` | ✅ refer ke `.opencode/skills/` |
+| Antigravity | `--antigravity` | `.antigravity/rules.md` | ✅ refer ke `.opencode/skills/` |
+
+## Output Structure
 
 ```
 project/
-├── AGENTS.md                    # Universal config (all tools)
-├── .opencode/                   # OpenCode only
-│   ├── AGENTS.md
+├── AGENTS.md                    # Universal config (skill mapping table)
+├── SKILL_LOADER.md              # ★ Universal entry point: reasoning framework + skill index
+├── .opencode/
+│   ├── AGENTS.md                # OpenCode-specific (superpowers flow)
 │   ├── opencode.json
-│   └── skills/ (23 skills)      # Auto-downloaded
-├── CLAUDE.md                    # Claude Code (with embedded skills)
-├── COPILOT.md                   # Copilot (with embedded skills)
-├── .cursorrules                 # Cursor (with embedded skills)
-├── .kiro/rules.md               # Kiro (with embedded skills)
-├── .antigravity/rules.md        # Antigravity (with embedded skills)
-└── .wiki/                       # Universal (all tools)
+│   └── skills/ (24 skills)      # SEMUA tool pake ini
+│       ├── output-mode/SKILL.md  # ★ Built-in: atur hemat token via "/cave"
+│       ├── wiki/SKILL.md
+│       └── ... (24 total)
+├── CLAUDE.md                    # Kecil (~50 token, refer ke SKILL_LOADER.md)
+├── COPILOT.md                   # Kecil
+├── .cursorrules                 # Kecil
+├── .kiro/rules.md               # Kecil
+├── .antigravity/rules.md        # Kecil
+└── .wiki/                       # Universal persistent memory
     ├── index.md
     ├── log.md
     ├── architecture.md
     └── issues.md
 ```
 
-## Skills (23 included)
+## Skills (24 included)
 
-Skills sourced from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) + [obra/superpowers](https://github.com/obra/superpowers). Auto-downloaded on first run, embedded in all tool configs.
+23 skills dari [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) + 1 built-in `output-mode`.
 
-| Skill | Description | Source |
-|-------|-------------|--------|
-| [api-and-interface-design](https://github.com/addyosmani/agent-skills/blob/main/skills/api-and-interface-design/SKILL.md) | API design patterns | addyosmani/agent-skills |
-| [ci-cd-and-automation](https://github.com/addyosmani/agent-skills/blob/main/skills/ci-cd-and-automation/SKILL.md) | CI/CD pipeline setup | addyosmani/agent-skills |
-| [code-review-and-quality](https://github.com/addyosmani/agent-skills/blob/main/skills/code-review-and-quality/SKILL.md) | Code review best practices | addyosmani/agent-skills |
-| [code-simplification](https://github.com/addyosmani/agent-skills/blob/main/skills/code-simplification/SKILL.md) | Code simplification | addyosmani/agent-skills |
-| [context-engineering](https://github.com/addyosmani/agent-skills/blob/main/skills/context-engineering/SKILL.md) | Agent context optimization | addyosmani/agent-skills |
-| [debugging-and-error-recovery](https://github.com/addyosmani/agent-skills/blob/main/skills/debugging-and-error-recovery/SKILL.md) | Debugging workflows | addyosmani/agent-skills |
-| [deprecation-and-migration](https://github.com/addyosmani/agent-skills/blob/main/skills/deprecation-and-migration/SKILL.md) | Deprecation patterns | addyosmani/agent-skills |
-| [documentation-and-adrs](https://github.com/addyosmani/agent-skills/blob/main/skills/documentation-and-adrs/SKILL.md) | Documentation & ADRs | addyosmani/agent-skills |
-| [doubt-driven-development](https://github.com/addyosmani/agent-skills/blob/main/skills/doubt-driven-development/SKILL.md) | Verification before completion | addyosmani/agent-skills |
-| [frontend-ui-engineering](https://github.com/addyosmani/agent-skills/blob/main/skills/frontend-ui-engineering/SKILL.md) | Production UI development | addyosmani/agent-skills |
-| [git-workflow-and-versioning](https://github.com/addyosmani/agent-skills/blob/main/skills/git-workflow-and-versioning/SKILL.md) | Git practices | addyosmani/agent-skills |
-| [idea-refine](https://github.com/addyosmani/agent-skills/blob/main/skills/idea-refine/SKILL.md) | Idea refinement | addyosmani/agent-skills |
-| [incremental-implementation](https://github.com/addyosmani/agent-skills/blob/main/skills/incremental-implementation/SKILL.md) | Incremental implementation | addyosmani/agent-skills |
-| [interview-me](https://github.com/addyosmani/agent-skills/blob/main/skills/interview-me/SKILL.md) | User interview | addyosmani/agent-skills |
-| [performance-optimization](https://github.com/addyosmani/agent-skills/blob/main/skills/performance-optimization/SKILL.md) | Performance optimization | addyosmani/agent-skills |
-| [planning-and-task-breakdown](https://github.com/addyosmani/agent-skills/blob/main/skills/planning-and-task-breakdown/SKILL.md) | Task planning | addyosmani/agent-skills |
-| [security-and-hardening](https://github.com/addyosmani/agent-skills/blob/main/skills/security-and-hardening/SKILL.md) | Security review | addyosmani/agent-skills |
-| [shipping-and-launch](https://github.com/addyosmani/agent-skills/blob/main/skills/shipping-and-launch/SKILL.md) | Shipping & launch | addyosmani/agent-skills |
-| [source-driven-development](https://github.com/addyosmani/agent-skills/blob/main/skills/source-driven-development/SKILL.md) | Documentation-based coding | addyosmani/agent-skills |
-| [spec-driven-development](https://github.com/addyosmani/agent-skills/blob/main/skills/spec-driven-development/SKILL.md) | Spec-first development | addyosmani/agent-skills |
-| [test-driven-development](https://github.com/addyosmani/agent-skills/blob/main/skills/test-driven-development/SKILL.md) | TDD workflows | addyosmani/agent-skills |
-| [using-agent-skills](https://github.com/addyosmani/agent-skills/blob/main/skills/using-agent-skills/SKILL.md) | Meta: how to use skills | addyosmani/agent-skills |
-| [wiki](https://github.com/obra/superpowers/blob/main/skills/wiki/SKILL.md) | LLM-maintained knowledge base | obra/superpowers |
+| Skill | Deskripsi | Source |
+|-------|-----------|--------|
+| api-and-interface-design | API design patterns | addyosmani/agent-skills |
+| browser-testing-with-devtools | Browser testing | addyosmani/agent-skills |
+| ci-cd-and-automation | CI/CD pipeline setup | addyosmani/agent-skills |
+| code-review-and-quality | Code review best practices | addyosmani/agent-skills |
+| code-simplification | Code simplification | addyosmani/agent-skills |
+| context-engineering | Agent context optimization | addyosmani/agent-skills |
+| debugging-and-error-recovery | Debugging workflows | addyosmani/agent-skills |
+| deprecation-and-migration | Deprecation patterns | addyosmani/agent-skills |
+| documentation-and-adrs | Documentation & ADRs | addyosmani/agent-skills |
+| doubt-driven-development | Verification before completion | addyosmani/agent-skills |
+| frontend-ui-engineering | Production UI development | addyosmani/agent-skills |
+| git-workflow-and-versioning | Git practices | addyosmani/agent-skills |
+| idea-refine | Idea refinement | addyosmani/agent-skills |
+| incremental-implementation | Incremental implementation | addyosmani/agent-skills |
+| interview-me | User interview | addyosmani/agent-skills |
+| **output-mode** | **Atur verbosity AI via `/cave` (built-in)** | **skill-forge** |
+| performance-optimization | Performance optimization | addyosmani/agent-skills |
+| planning-and-task-breakdown | Task planning | addyosmani/agent-skills |
+| security-and-hardening | Security review | addyosmani/agent-skills |
+| shipping-and-launch | Shipping & launch | addyosmani/agent-skills |
+| source-driven-development | Documentation-based coding | addyosmani/agent-skills |
+| spec-driven-development | Spec-first development | addyosmani/agent-skills |
+| test-driven-development | TDD workflows | addyosmani/agent-skills |
+| using-agent-skills | Meta: how to use skills | addyosmani/agent-skills |
+| wiki | LLM-maintained knowledge base | obra/superpowers |
 
-### Superpowers Plugin
+## ⚠️ Reasoning Framework
 
-Skills powered by [obra/superpowers](https://github.com/obra/superpowers) — the OpenCode skill framework.
+`SKILL_LOADER.md` berisi **Reasoning Framework 5 langkah** yang WAJIB AI ikuti SEBELUM menjawab. Ini yang bikin AI murah (Haiku, 4o-mini) berpikir terstruktur seperti AI mahal.
 
-```json
-// ~/.config/opencode/opencode.json
-{
-  "plugin": [
-    "superpowers@git+https://github.com/obra/superpowers.git"
-  ]
-}
+```markdown
+### 1. ANALISIS — breakdown masalah
+### 2. KONTEKS — arsitektur & constraint project
+### 3. RENCANA — minimal 3 langkah konkret
+### 4. EKSEKUSI — implementasi sesuai rencana
+### 5. VERIFIKASI — cek ulang + "Saya ragu karena..."
 ```
 
-> For new installs, omitting the `#tag` means the default branch is used, so the latest plugin source is fetched. To pin to a stable release, append a specific tag like `#v5.1.0`.
+## Output Mode: `/cave` — Ganti Caveman
+
+Built-in skill `output-mode` biar user atur verbosity AI langsung dari chat.
+
+```markdown
+User:  "cave ringkas"   → hemat ~40%, 1 kalimat per langkah
+       "cave ultra"     → hemat ~65%, langsung masalah → solusi
+       "cave caveman"   → hemat ~75%, fragment aja
+       "cave normal"    → balik ke default (reasoning full)
+```
 
 ## How Wiki Works
 
-The wiki (`.wiki/`) is a persistent memory system for LLM agents:
-
-1. **First session**: agent reads `.wiki/index.md` → learns project architecture
-2. **After code changes**: agent updates `.wiki/log.md` with changes
-3. **After optimization**: agent updates `.wiki/architecture.md` + benchmark results
-4. **After bugs**: agent adds to `.wiki/issues.md`
-5. **New sessions**: agent reads wiki → knows everything from previous sessions
-
-### Wiki Files
+The wiki (`.wiki/`) adalah persistent memory system untuk LLM agents:
 
 | File | Purpose | Updated When |
 |------|---------|--------------|
@@ -134,46 +140,16 @@ The wiki (`.wiki/`) is a persistent memory system for LLM agents:
 | `.wiki/architecture.md` | System design + benchmarks | Architecture changes |
 | `.wiki/issues.md` | Known issues + solutions | Bugs found/fixed |
 
-## Refresh Skills Cache (Optional)
-
-Skills are auto-downloaded on first run. To force refresh:
+## Refresh Skills Cache
 
 ```bash
-bash /path/to/ai/sync-skills.sh
+bash ~/skill-forge/sync-skills.sh
 ```
 
-## Files
+## CI
 
-```
-/path/to/ai/
-├── README.md
-├── setup-project.sh    # Main script (auto-downloads skills)
-├── sync-skills.sh      # Optional: force refresh skills cache
-└── skills/             # Auto-populated on first run (23 skills)
-    ├── api-and-interface-design/
-    ├── ci-cd-and-automation/
-    ├── code-review-and-quality/
-    ├── code-simplification/
-    ├── context-engineering/
-    ├── debugging-and-error-recovery/
-    ├── deprecation-and-migration/
-    ├── documentation-and-adrs/
-    ├── doubt-driven-development/
-    ├── frontend-ui-engineering/
-    ├── git-workflow-and-versioning/
-    ├── idea-refine/
-    ├── incremental-implementation/
-    ├── interview-me/
-    ├── performance-optimization/
-    ├── planning-and-task-breakdown/
-    ├── security-and-hardening/
-    ├── shipping-and-launch/
-    ├── source-driven-development/
-    ├── spec-driven-development/
-    ├── test-driven-development/
-    ├── using-agent-skills/
-    └── wiki/
-```
+- **ShellCheck** — lint otomatis `.sh` files tiap push
+- **BATS** — test coverage untuk semua tool flags
 
 ## Credits
 
